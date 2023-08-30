@@ -366,8 +366,13 @@ double topPaddingOfMap = 0;
                       //to ..............................
                       GestureDetector(
                         onTap: (){
-                          Navigator.push(context,MaterialPageRoute(builder: (c)=> SearchPlacesScreen()));
+                          var responseFromSearchCsreen = Navigator.push(context,MaterialPageRoute(builder: (c)=> SearchPlacesScreen()));
                           print("taping");
+
+                          if(responseFromSearchCsreen == "obtainedDropoff"){
+                            //draw route / draw polyline
+                          }
+
                         },
                         child: Row(
                           children: [
@@ -386,11 +391,13 @@ double topPaddingOfMap = 0;
                                   style: TextStyle(
                                       color: Colors.white, fontSize: 12),
                                 ),
-                                Text(
-                                  "Where To go",
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 14),
-                                ),
+                                Text( 
+                                Provider.of<AppInfo>(context).userDropOffLocation != null
+                                ? Provider.of<AppInfo>(context).userDropOffLocation!.locationname!
+                                : "Where to go",
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 14),
+                              ),
                               ],
                             )
                           ],

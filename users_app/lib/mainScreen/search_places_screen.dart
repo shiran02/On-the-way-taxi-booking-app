@@ -60,7 +60,7 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
                   color: Colors.white, blurRadius: 5, offset: Offset(0.7, 0.5)),
             ]),
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(10.0),
               child: Column(
                 children: [
                   const SizedBox(
@@ -69,10 +69,14 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
                   Stack(
                     children: [
                       GestureDetector(
-                        onTap: () {},
-                        child: Icon(
+                        onTap: ()
+                        {
+                          Navigator.pop(context);
+                        },
+                        child: const Icon(
                           Icons.arrow_back,
                           color: Colors.grey,
+                          size: 30,
                         ),
                       ),
                       Center(
