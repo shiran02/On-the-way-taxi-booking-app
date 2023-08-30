@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:users_app/assistants/assistant_methods.dart';
 import 'package:users_app/authentication/login_screen.dart';
 import 'package:users_app/infoHandler/app_info.dart';
+import 'package:users_app/mainScreen/search_places_screen.dart';
 import 'package:users_app/widgets/my_drawer.dart';
 
 import '../appConstants/app_colors.dart';
@@ -363,31 +364,37 @@ double topPaddingOfMap = 0;
 
                       SizedBox(height: 10),
                       //to ..............................
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.add_location_alt_outlined,
-                            color: Colors.white,
-                          ),
-                          SizedBox(
-                            width: 12.0,
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "To",
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 12),
-                              ),
-                              Text(
-                                "Your dropped location",
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 14),
-                              ),
-                            ],
-                          )
-                        ],
+                      GestureDetector(
+                        onTap: (){
+                          Navigator.push(context,MaterialPageRoute(builder: (c)=> SearchPlacesScreen()));
+                          print("taping");
+                        },
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.add_location_alt_outlined,
+                              color: Colors.white,
+                            ),
+                            SizedBox(
+                              width: 12.0,
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "To",
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 12),
+                                ),
+                                Text(
+                                  "Where To go",
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 14),
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
                       ),
 
                       SizedBox(height: 10),
