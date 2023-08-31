@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import 'package:users_app/widgets/my_drawer.dart';
 import '../appConstants/app_colors.dart';
 import '../global/global.dart';
 import '../splashScreen/splash_screen.dart';
+import '../widgets/progress_dialog.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -25,6 +27,9 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+
+  bool openNavigationDrawer = true;
+
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
 
@@ -32,6 +37,15 @@ class _MainScreenState extends State<MainScreen> {
 
   Position? userCurentPosition;
   var geoLocater = Geolocator();
+
+  List<LatLng> pLineCoOrdinatesList = [];
+  Set<Polyline> polyLineSet = {};
+
+  Set<Marker> markersSet = {};
+  Set<Circle> circlesSet = {};
+
+  String userName = "Your Name";
+  String userEmail = "Your Email";
 
   blackThemeGoogleMap() {
     newGoogleMapController!.setMapStyle('''
@@ -199,17 +213,14 @@ class _MainScreenState extends State<MainScreen> {
                 ''');
   }
 
-LocationPermission? _locationPermission;
+  LocationPermission? _locationPermission;
 
-double bottomPaddingOfMap = 0;
-double topPaddingOfMap = 0;
+  double bottomPaddingOfMap = 0;
+  double topPaddingOfMap = 0;
 
-
-
-  checkIfLocationPermissionload() async{
-
+  checkIfLocationPermissionload() async {
     _locationPermission = await Geolocator.requestPermission();
-    if(_locationPermission == LocationPermission.denied){
+    if (_locationPermission == LocationPermission.denied) {
       _locationPermission = await Geolocator.requestPermission();
     }
   }
@@ -224,22 +235,28 @@ double topPaddingOfMap = 0;
   double searchLocationContaimerHeight = 240;
 
   // get user current location
-  localUserPosition() async
-  {
-    Position currentPosition =  await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+  localUserPosition() async {
+    Position currentPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
     userCurentPosition = currentPosition;
-  
-  
-    LatLng latingPosition = LatLng(userCurentPosition!.latitude,userCurentPosition!.longitude ); 
-  
-    CameraPosition cameraPosition = CameraPosition(target: latingPosition,zoom: 40);
 
-    newGoogleMapController!.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+    LatLng latingPosition =
+        LatLng(userCurentPosition!.latitude, userCurentPosition!.longitude);
 
-    String humanReadableAddress =  await AssistantMethods.searchAddressForGeograpiCodinates(userCurentPosition! , context);
+    CameraPosition cameraPosition =
+        CameraPosition(target: latingPosition, zoom: 10);
+
+    newGoogleMapController!
+        .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+
+    String humanReadableAddress =
+        await AssistantMethods.searchAddressForGeograpiCodinates(
+            userCurentPosition!, context);
     print("this is your address" + humanReadableAddress);
-  
-   }
+
+    userName = userModelCurrentInfo!.name!;
+    userEmail = userModelCurrentInfo!.email!;
+  }
 
   @override
   void initState() {
@@ -256,20 +273,24 @@ double topPaddingOfMap = 0;
         child: Theme(
           data: Theme.of(context).copyWith(canvasColor: Colors.black),
           child: MyDrawer(
-            name: userModelCurrentInfo?.name,
-            email: userModelCurrentInfo?.email,
+            name: userName,
+            email: userEmail,
           ),
         ),
       ),
       body: Stack(
         children: [
           GoogleMap(
-            padding: EdgeInsets.only(bottom: bottomPaddingOfMap , top: topPaddingOfMap),
+            padding: EdgeInsets.only(
+                bottom: bottomPaddingOfMap, top: topPaddingOfMap),
             //mapType: MapType.hybrid,
             initialCameraPosition: _kGooglePlex,
             myLocationEnabled: true,
             zoomGesturesEnabled: true,
             zoomControlsEnabled: true,
+            polylines: polyLineSet,
+            markers: markersSet,
+            circles: circlesSet,
             onMapCreated: (GoogleMapController controller) {
               _controller.complete(controller);
               newGoogleMapController = controller;
@@ -293,12 +314,18 @@ double topPaddingOfMap = 0;
             left: 22,
             child: GestureDetector(
               onTap: () {
-                sKey.currentState!.openDrawer();
+
+                if(openNavigationDrawer){
+                  sKey.currentState!.openDrawer();
+                }else{
+                  //resraet - refresh-minimize app programatically
+                  SystemNavigator.pop();
+                }
               },
-              child: const CircleAvatar(
-                backgroundColor: Colors.green,
+              child: CircleAvatar(
+                backgroundColor: Color.fromARGB(191, 115, 104, 84),
                 child: Icon(
-                  Icons.menu,
+                  openNavigationDrawer  ? Icons.menu : Icons.close,
                   color: Colors.white,
                 ),
               ),
@@ -317,20 +344,20 @@ double topPaddingOfMap = 0;
               child: Container(
                 height: searchLocationContaimerHeight,
                 decoration: const BoxDecoration(
-                    color: Colors.black87,
+                    color: Color.fromARGB(191, 115, 104, 84),
                     borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20))),
-                child:  Padding(
+                child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                   child: Column(
                     children: [
                       //from ---------------------------------------------------
                       Row(
-                        children:  [
+                        children: [
                           Icon(
                             Icons.add_location_alt_outlined,
-                            color: Colors.white,
+                            color: AppColors.fontColor,
                           ),
                           SizedBox(
                             width: 12.0,
@@ -341,14 +368,19 @@ double topPaddingOfMap = 0;
                               Text(
                                 "From",
                                 style: TextStyle(
-                                    color: Colors.white, fontSize: 12),
+                                    color: AppColors.whiteColor, fontSize: 12),
                               ),
-                              Text( 
-                                Provider.of<AppInfo>(context).userPickUpLocation != null
-                                ? (Provider.of<AppInfo>(context).userPickUpLocation!.locationname!).substring(0,28)
-                                : "Not Getting Address",
+                              Text(
+                                Provider.of<AppInfo>(context)
+                                            .userPickUpLocation !=
+                                        null
+                                    ? (Provider.of<AppInfo>(context)
+                                            .userPickUpLocation!
+                                            .locationname!)
+                                        .substring(0, 28)
+                                    : "Not Getting Address",
                                 style: TextStyle(
-                                    color: Colors.white, fontSize: 14),
+                                    color: AppColors.whiteColor, fontSize: 14),
                               ),
                             ],
                           )
@@ -359,26 +391,34 @@ double topPaddingOfMap = 0;
 
                       Divider(
                         height: 2,
-                        color: Colors.white,
+                        color: AppColors.drawerblue,
                       ),
 
                       SizedBox(height: 10),
                       //to ..............................
                       GestureDetector(
-                        onTap: (){
-                          var responseFromSearchCsreen = Navigator.push(context,MaterialPageRoute(builder: (c)=> SearchPlacesScreen()));
+                        onTap: () async {
+                          var responseFromSearchCsreen = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (c) => SearchPlacesScreen()));
                           print("taping");
 
-                          if(responseFromSearchCsreen == "obtainedDropoff"){
-                            //draw route / draw polyline
-                          }
+                          if (responseFromSearchCsreen == "obtainedDropoff") {
 
+                            setState(() {
+                              openNavigationDrawer = false;
+                            });
+
+                            //draw route / draw polyline
+                            await drawPolyLineFromOriginToDestination();
+                          }
                         },
                         child: Row(
                           children: [
                             Icon(
                               Icons.add_location_alt_outlined,
-                              color: Colors.white,
+                              color: AppColors.fontColor,
                             ),
                             SizedBox(
                               width: 12.0,
@@ -389,15 +429,21 @@ double topPaddingOfMap = 0;
                                 Text(
                                   "To",
                                   style: TextStyle(
-                                      color: Colors.white, fontSize: 12),
+                                      color: AppColors.whiteColor,
+                                      fontSize: 12),
                                 ),
-                                Text( 
-                                Provider.of<AppInfo>(context).userDropOffLocation != null
-                                ? Provider.of<AppInfo>(context).userDropOffLocation!.locationname!
-                                : "Where to go",
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 14),
-                              ),
+                                Text(
+                                  Provider.of<AppInfo>(context)
+                                              .userDropOffLocation !=
+                                          null
+                                      ? Provider.of<AppInfo>(context)
+                                          .userDropOffLocation!
+                                          .locationname!
+                                      : "Where to go",
+                                  style: TextStyle(
+                                      color: AppColors.whiteColor,
+                                      fontSize: 14),
+                                ),
                               ],
                             )
                           ],
@@ -408,7 +454,7 @@ double topPaddingOfMap = 0;
 
                       const Divider(
                         height: 2,
-                        color: Colors.white,
+                        color: AppColors.drawerblue,
                       ),
                       const SizedBox(height: 10),
 
@@ -417,12 +463,11 @@ double topPaddingOfMap = 0;
                             //  Navigator.push(context, MaterialPageRoute(builder: (c)=>const CarInfoScreen()));
                           },
                           style: ElevatedButton.styleFrom(
-                              primary: AppColors.greenColor),
+                              primary: AppColors.drawerblue),
                           child: const Text(
                             "Request a ride",
                             style: TextStyle(
-                                color: AppColors.whiteColor, 
-                                fontSize: 18),
+                                color: AppColors.fontColor, fontSize: 18),
                           )),
                     ],
                   ),
@@ -433,5 +478,134 @@ double topPaddingOfMap = 0;
         ],
       ),
     );
+  }
+
+  Future<void> drawPolyLineFromOriginToDestination() async {
+    var originPosition =
+        Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
+    var destinationPosition =
+        Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
+
+    // var sourceLatlang = LatLng(sourcePosition!.locationLatiude!, sourcePosition!.locationLongitude!);
+    // var destinationLatlang = LatLng(destinationPosition!.locationLatiude!, destinationPosition!.locationLongitude!);
+
+    var originLatlang = LatLng(double.parse(originPosition!.locationLatiude!),
+        double.parse(originPosition!.locationLongitude!));
+
+    var destinationLatlang = LatLng(
+        double.parse(destinationPosition!.locationLatiude!),
+        double.parse(destinationPosition!.locationLongitude!));
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => ProgressDialog(
+        message: ",Please wait.",
+      ),
+    );
+
+    var directionDetailsInfo =
+        await AssistantMethods.obtainOriginToDestinationDirectionDetail(
+            originLatlang, destinationLatlang);
+
+    Navigator.pop(context);
+
+    print("These are points = ");
+    print(directionDetailsInfo!.e_points);
+
+    PolylinePoints pPoints = PolylinePoints();
+    List<PointLatLng> decodedPolyLinePointsResultList =
+        pPoints.decodePolyline(directionDetailsInfo!.e_points!);
+
+    pLineCoOrdinatesList.clear();
+
+    if (decodedPolyLinePointsResultList.isNotEmpty) {
+      decodedPolyLinePointsResultList.forEach((PointLatLng pointLatLng) {
+        pLineCoOrdinatesList
+            .add(LatLng(pointLatLng.latitude, pointLatLng.longitude));
+      });
+    }
+
+    polyLineSet.clear();
+
+    setState(() {
+      Polyline polyline = Polyline(
+        color: Colors.white,
+        polylineId: const PolylineId("PolylineID"),
+        jointType: JointType.round,
+        points: pLineCoOrdinatesList,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        geodesic: true,
+      );
+
+      polyLineSet.add(polyline);
+    });
+
+    LatLngBounds boundsLatLng;
+    if (originLatlang.latitude > destinationLatlang.latitude &&
+        originLatlang.longitude > destinationLatlang.longitude) {
+      boundsLatLng =
+          LatLngBounds(southwest: destinationLatlang, northeast: originLatlang);
+    } else if (originLatlang.longitude > destinationLatlang.longitude) {
+      boundsLatLng = LatLngBounds(
+        southwest: LatLng(originLatlang.latitude, destinationLatlang.longitude),
+        northeast: LatLng(destinationLatlang.latitude, originLatlang.longitude),
+      );
+    } else if (originLatlang.latitude > originLatlang.latitude) {
+      boundsLatLng = LatLngBounds(
+        southwest: LatLng(originLatlang.latitude, originLatlang.longitude),
+        northeast: LatLng(originLatlang.latitude, destinationLatlang.longitude),
+      );
+    } else {
+      boundsLatLng =
+          LatLngBounds(southwest: originLatlang, northeast: destinationLatlang);
+    }
+
+    newGoogleMapController!
+        .animateCamera(CameraUpdate.newLatLngBounds(boundsLatLng, 65));
+
+    Marker originMarker = Marker(
+      markerId: const MarkerId("originID"),
+      infoWindow:
+          InfoWindow(title: originPosition.locationname, snippet: "Origin"),
+      position: originLatlang,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+    );
+
+    Marker destinationMarker = Marker(
+      markerId: const MarkerId("destinationID"),
+      infoWindow: InfoWindow(
+          title: destinationPosition.locationname, snippet: "Destination"),
+      position: destinationLatlang,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+    );
+
+    setState(() {
+      markersSet.add(originMarker);
+      markersSet.add(destinationMarker);
+    });
+
+    Circle originCircle = Circle(
+      circleId: const CircleId("originID"),
+      fillColor: Colors.green,
+      radius: 12,
+      strokeWidth: 3,
+      strokeColor: Colors.white,
+      center: originLatlang,
+    );
+
+    Circle destinationCircle = Circle(
+      circleId: const CircleId("destinationID"),
+      fillColor: Colors.red,
+      radius: 12,
+      strokeWidth: 3,
+      strokeColor: Colors.white,
+      center: destinationLatlang,
+    );
+
+    setState(() {
+      circlesSet.add(originCircle);
+      circlesSet.add(destinationCircle);
+    });
   }
 }

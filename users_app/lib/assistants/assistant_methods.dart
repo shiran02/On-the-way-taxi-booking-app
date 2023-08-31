@@ -1,5 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:users_app/assistants/request_assistant.dart';
 import 'package:users_app/global/global.dart';
@@ -7,7 +8,11 @@ import 'package:users_app/infoHandler/app_info.dart';
 import 'package:users_app/models/directions.dart';
 import 'package:users_app/models/user_model.dart';
 
+import '../models/direction_detail_info.dart';
+
 class AssistantMethods{
+
+  String mapKey = "AIzaSyCWVJSsMkbwzC8r7XhW62cycZMowkh-OKY";
 
 
   static Future<String> searchAddressForGeograpiCodinates(Position position , context)async{
@@ -50,6 +55,33 @@ class AssistantMethods{
        print("email" + userModelCurrentInfo!.email.toString());
       }
     });
+  }
+
+
+  static Future<DirectionDetailInfo?> obtainOriginToDestinationDirectionDetail(LatLng originPosition , LatLng destinationPosition)async{
+
+    String urlOriginToDestinationDirectionDetail = "https://maps.googleapis.com/maps/api/directions/json?origin=${originPosition.latitude},${originPosition.longitude}&destination=${destinationPosition.latitude},${destinationPosition.longitude}&key=AIzaSyCWVJSsMkbwzC8r7XhW62cycZMowkh-OKY";
+
+    //get response from API 
+    var responseDirectionApi =  await RequestAssistant.receiveRequest(urlOriginToDestinationDirectionDetail);
+  
+  
+     if (responseDirectionApi == "Error occured ,Faild. No Response") {
+        return null;
+      }
+
+
+      DirectionDetailInfo directionDetailInfo = DirectionDetailInfo();
+      directionDetailInfo.e_points = responseDirectionApi["routes"][0]["overview_polyline"]["points"];
+      directionDetailInfo.distance_text = responseDirectionApi["routes"][0]["legs"][0]["distance"]["text"];
+      directionDetailInfo.distance_value = responseDirectionApi["routes"][0]["legs"][0]["distance"]["value"];
+      directionDetailInfo.duration_text = responseDirectionApi["routes"][0]["legs"][0]["duration"]["text"];
+      directionDetailInfo.duration_value = responseDirectionApi["routes"][0]["legs"][0]["duration"]["value"];
+
+
+      return directionDetailInfo;
+
+
   }
 
 
