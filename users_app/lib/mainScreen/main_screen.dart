@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_geofire/flutter_geofire.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +15,9 @@ import 'package:users_app/assistants/assistant_methods.dart';
 import 'package:users_app/assistants/geofire_assistant.dart';
 import 'package:users_app/authentication/login_screen.dart';
 import 'package:users_app/infoHandler/app_info.dart';
+import 'package:users_app/main.dart';
 import 'package:users_app/mainScreen/search_places_screen.dart';
+import 'package:users_app/mainScreen/select_nereast_active_driver_screen.dart';
 import 'package:users_app/widgets/my_drawer.dart';
 
 import '../appConstants/app_colors.dart';
@@ -30,7 +34,6 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-
   bool openNavigationDrawer = true;
 
   final Completer<GoogleMapController> _controller =
@@ -53,6 +56,7 @@ class _MainScreenState extends State<MainScreen> {
   bool activeNearByDriverKeyLoads = false;
   BitmapDescriptor? activeNearbyIcon;
 
+  List<ActiveNearbyAvailableDrivers> onlineNearByAvailableDriversList = [];
 
   blackThemeGoogleMap() {
     newGoogleMapController!.setMapStyle('''
@@ -273,9 +277,64 @@ class _MainScreenState extends State<MainScreen> {
     checkIfLocationPermissionload();
   }
 
+  saveRideRequestInformation() {
+    //1. save the rideRequest information
+
+    onlineNearByAvailableDriversList =
+        GeoFireAssistant.activeNearbyAvailableDriversList;
+    searchNearestOnlineDriver();
+  }
+
+  searchNearestOnlineDriver() async {
+
+    // No online driver Aailable
+
+    if (onlineNearByAvailableDriversList.length == 0) {
+      // cancel the ride request
+      setState(() {
+        polyLineSet.clear();
+        markersSet.clear();
+        circlesSet.clear();
+        pLineCoOrdinatesList.clear();
+      });
+
+      Fluttertoast.showToast(
+          msg:
+              "No Online Nearest Driver Available. Search Again after some time, Restarting App Now.");
+
+      Future.delayed(const Duration(milliseconds: 4000), () {
+        MyApp.restartApp(context);
+      });
+      return;
+    }
+
+    //any active  driver awailable
+
+    await retriveOnLineDriversInformation(onlineNearByAvailableDriversList);
+
+    Navigator.push(context, MaterialPageRoute(builder: (c)=> SelectNearestActiveDriversScreen()));
+  }
+
+  retriveOnLineDriversInformation(List onLineNearestDriverList) async{
+
+    DatabaseReference ref = FirebaseDatabase.instance.ref().child("drivers");
+
+    for(int i=0 ; i < onLineNearestDriverList.length ; i++)
+    {
+        await ref.child(onLineNearestDriverList[i].driverId.toString())
+        .once()
+        .then((dataSnapshot)
+        {
+          var driverKeyInfo = dataSnapshot.snapshot.value;
+          dList.add(driverKeyInfo);
+          print("driver information = " + dList.toString());
+        });
+    }
+
+  }
+
   @override
   Widget build(BuildContext context) {
-
     createActiveNearByDriverIconMarker();
 
     return Scaffold(
@@ -326,10 +385,9 @@ class _MainScreenState extends State<MainScreen> {
             left: 22,
             child: GestureDetector(
               onTap: () {
-
-                if(openNavigationDrawer){
+                if (openNavigationDrawer) {
                   sKey.currentState!.openDrawer();
-                }else{
+                } else {
                   //resraet - refresh-minimize app programatically
                   SystemNavigator.pop();
                 }
@@ -337,7 +395,7 @@ class _MainScreenState extends State<MainScreen> {
               child: CircleAvatar(
                 backgroundColor: Color.fromARGB(191, 115, 104, 84),
                 child: Icon(
-                  openNavigationDrawer  ? Icons.menu : Icons.close,
+                  openNavigationDrawer ? Icons.menu : Icons.close,
                   color: Colors.white,
                 ),
               ),
@@ -356,31 +414,32 @@ class _MainScreenState extends State<MainScreen> {
               child: Container(
                 height: searchLocationContaimerHeight,
                 decoration: const BoxDecoration(
-                    color: Color.fromARGB(191, 115, 104, 84),
+                    color: Colors.black87,
                     borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20))),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                   child: Column(
                     children: [
                       //from ---------------------------------------------------
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.add_location_alt_outlined,
                             color: AppColors.fontColor,
                           ),
-                          SizedBox(
+                          const SizedBox(
                             width: 12.0,
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 "From",
                                 style: TextStyle(
-                                    color: AppColors.whiteColor, fontSize: 12),
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.whiteColor, fontSize: 12),
                               ),
                               Text(
                                 Provider.of<AppInfo>(context)
@@ -391,7 +450,7 @@ class _MainScreenState extends State<MainScreen> {
                                             .locationname!)
                                         .substring(0, 28)
                                     : "Not Getting Address",
-                                style: TextStyle(
+                                style: const TextStyle(
                                     color: AppColors.whiteColor, fontSize: 14),
                               ),
                             ],
@@ -399,11 +458,11 @@ class _MainScreenState extends State<MainScreen> {
                         ],
                       ),
 
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
 
-                      Divider(
+                      const Divider(
                         height: 2,
-                        color: AppColors.drawerblue,
+                        color: AppColors.whiteColor,
                       ),
 
                       SizedBox(height: 10),
@@ -417,7 +476,6 @@ class _MainScreenState extends State<MainScreen> {
                           print("taping");
 
                           if (responseFromSearchCsreen == "obtainedDropoff") {
-
                             setState(() {
                               openNavigationDrawer = false;
                             });
@@ -428,19 +486,20 @@ class _MainScreenState extends State<MainScreen> {
                         },
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.add_location_alt_outlined,
                               color: AppColors.fontColor,
                             ),
-                            SizedBox(
+                            const SizedBox(
                               width: 12.0,
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   "To",
                                   style: TextStyle(
+                                    fontWeight: FontWeight.bold,
                                       color: AppColors.whiteColor,
                                       fontSize: 12),
                                 ),
@@ -452,7 +511,7 @@ class _MainScreenState extends State<MainScreen> {
                                           .userDropOffLocation!
                                           .locationname!
                                       : "Where to go",
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       color: AppColors.whiteColor,
                                       fontSize: 14),
                                 ),
@@ -462,24 +521,34 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ),
 
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
 
                       const Divider(
                         height: 2,
-                        color: AppColors.drawerblue,
+                        color: AppColors.whiteColor,
                       ),
                       const SizedBox(height: 10),
 
                       ElevatedButton(
                           onPressed: () {
                             //  Navigator.push(context, MaterialPageRoute(builder: (c)=>const CarInfoScreen()));
+
+                            if (Provider.of<AppInfo>(context, listen: false)
+                                    .userDropOffLocation !=
+                                null) {
+                              saveRideRequestInformation();
+                            } else {
+                              Fluttertoast.showToast(
+                                  msg: "Please select destination");
+                            }
                           },
                           style: ElevatedButton.styleFrom(
-                              primary: AppColors.drawerblue),
+                              primary: AppColors.greyColor,),
                           child: const Text(
                             "Request a ride",
                             style: TextStyle(
-                                color: AppColors.fontColor, fontSize: 18),
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.blackColor, fontSize: 18),
                           )),
                     ],
                   ),
@@ -563,9 +632,9 @@ class _MainScreenState extends State<MainScreen> {
         southwest: LatLng(originLatlang.latitude, destinationLatlang.longitude),
         northeast: LatLng(destinationLatlang.latitude, originLatlang.longitude),
       );
-    } else if (originLatlang.latitude > originLatlang.latitude) {
+    } else if (originLatlang.latitude > destinationLatlang.latitude) {
       boundsLatLng = LatLngBounds(
-        southwest: LatLng(originLatlang.latitude, originLatlang.longitude),
+        southwest: LatLng(destinationLatlang.latitude, originLatlang.longitude),
         northeast: LatLng(originLatlang.latitude, destinationLatlang.longitude),
       );
     } else {
@@ -621,101 +690,98 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-
-  initializeGeoFireListener()
-  {
-
+  initializeGeoFireListener() {
     Geofire.initialize("activeDrivers");
 
-    Geofire.queryAtLocation(userCurentPosition!.latitude, userCurentPosition!.longitude, 5)!.listen((map) {
-        print(map);
-        if (map != null) {
-          var callBack = map['callBack'];
+    Geofire.queryAtLocation(
+            userCurentPosition!.latitude, userCurentPosition!.longitude, 5)!
+        .listen((map) {
+      print(map);
+      if (map != null) {
+        var callBack = map['callBack'];
 
-          //latitude will be retrieved from map['latitude']
-          //longitude will be retrieved from map['longitude']
+        //latitude will be retrieved from map['latitude']
+        //longitude will be retrieved from map['longitude']
 
-          switch (callBack) {
-             //when any driver come active 
-            case Geofire.onKeyEntered:    
-              ActiveNearbyAvailableDrivers activeNearbyAvailableDriver = ActiveNearbyAvailableDrivers();
-              activeNearbyAvailableDriver.locationLatiude = map['latitude'];
-              activeNearbyAvailableDriver.locationLongitude = map['longitude'];
-              activeNearbyAvailableDriver.driverId = map['key'];
-              GeoFireAssistant.activeNearbyAvailableDriversList.add(activeNearbyAvailableDriver);
-              if(activeNearByDriverKeyLoads == true){
-                displaActiveDriversOnUsersMap();
-              }
-              break;
-
-            //when any driver become offline 
-            case Geofire.onKeyExited:   
-              GeoFireAssistant.deleteOffmileDriverFronList(map['key']);
-              break;
-
-            //when driver move - siply update dirver location
-            case Geofire.onKeyMoved:
-              ActiveNearbyAvailableDrivers activeNearbyAvailableDriver = ActiveNearbyAvailableDrivers();
-              activeNearbyAvailableDriver.locationLatiude = map['latitude'];
-              activeNearbyAvailableDriver.locationLongitude = map['longitude'];
-              activeNearbyAvailableDriver.driverId = map['key'];
-              GeoFireAssistant.updateActiveNeatByAvailbleDriverLocation(activeNearbyAvailableDriver);
-              break;
-            
-            //display the online / active drivers on use's map
-            case Geofire.onGeoQueryReady:
-              activeNearByDriverKeyLoads = true;
+        switch (callBack) {
+          //when any driver come active
+          case Geofire.onKeyEntered:
+            ActiveNearbyAvailableDrivers activeNearbyAvailableDriver =
+                ActiveNearbyAvailableDrivers();
+            activeNearbyAvailableDriver.locationLatiude = map['latitude'];
+            activeNearbyAvailableDriver.locationLongitude = map['longitude'];
+            activeNearbyAvailableDriver.driverId = map['key'];
+            GeoFireAssistant.activeNearbyAvailableDriversList
+                .add(activeNearbyAvailableDriver);
+            if (activeNearByDriverKeyLoads == true) {
               displaActiveDriversOnUsersMap();
-              break;
-          }
+            }
+            break;
+
+          //when any driver become offline
+          case Geofire.onKeyExited:
+            GeoFireAssistant.deleteOffmileDriverFronList(map['key']);
+            break;
+
+          //when driver move - siply update dirver location
+          case Geofire.onKeyMoved:
+            ActiveNearbyAvailableDrivers activeNearbyAvailableDriver =
+                ActiveNearbyAvailableDrivers();
+            activeNearbyAvailableDriver.locationLatiude = map['latitude'];
+            activeNearbyAvailableDriver.locationLongitude = map['longitude'];
+            activeNearbyAvailableDriver.driverId = map['key'];
+            GeoFireAssistant.updateActiveNeatByAvailbleDriverLocation(
+                activeNearbyAvailableDriver);
+            break;
+
+          //display the online / active drivers on use's map
+          case Geofire.onGeoQueryReady:
+            activeNearByDriverKeyLoads = true;
+            displaActiveDriversOnUsersMap();
+            break;
         }
+      }
 
-        setState(() {});
+      setState(() {});
+    });
+  }
 
+  displaActiveDriversOnUsersMap() {
+    setState(() {
+      markersSet.clear();
+      circlesSet.clear();
 
+      Set<Marker> driversmarkersSet = Set<Marker>();
 
-  });
-}
+      for (ActiveNearbyAvailableDrivers eachDriver
+          in GeoFireAssistant.activeNearbyAvailableDriversList) {
+        LatLng eachDriveractiveposition =
+            LatLng(eachDriver.locationLatiude!, eachDriver.locationLongitude!);
 
-    displaActiveDriversOnUsersMap()
-    {
-      setState(() {
-        markersSet.clear();
-        circlesSet.clear();
+        Marker marker = Marker(
+          markerId: MarkerId(eachDriver.driverId!),
+          position: eachDriveractiveposition,
+          icon: activeNearbyIcon!,
+          rotation: 360,
+        );
 
-        Set<Marker> driversmarkersSet = Set<Marker>();
+        driversmarkersSet.add(marker);
 
-        for(ActiveNearbyAvailableDrivers eachDriver in GeoFireAssistant.activeNearbyAvailableDriversList){
-          LatLng eachDriveractiveposition = LatLng(eachDriver.locationLatiude! ,eachDriver.locationLongitude!);
-        
-          Marker marker = Marker(
-            markerId: MarkerId(eachDriver.driverId!),
-            position: eachDriveractiveposition,
-            icon: activeNearbyIcon!,
-            rotation: 360,
-          );
-
-          driversmarkersSet.add(marker);
-
-          setState(() {
-            markersSet = driversmarkersSet;
-          });
-        
-        }
-
-        
-
-
-      });
-    }
-
-    createActiveNearByDriverIconMarker(){
-      if(activeNearbyIcon == null){
-        ImageConfiguration imageConfiguration = createLocalImageConfiguration(context , size:const Size(2, 2));
-        BitmapDescriptor.fromAssetImage(imageConfiguration, "images/car.png").then((value){
-          activeNearbyIcon = value;
+        setState(() {
+          markersSet = driversmarkersSet;
         });
       }
-    }
+    });
+  }
 
+  createActiveNearByDriverIconMarker() {
+    if (activeNearbyIcon == null) {
+      ImageConfiguration imageConfiguration =
+          createLocalImageConfiguration(context, size: const Size(2, 2));
+      BitmapDescriptor.fromAssetImage(imageConfiguration, "images/car.png")
+          .then((value) {
+        activeNearbyIcon = value;
+      });
+    }
+  }
 }
