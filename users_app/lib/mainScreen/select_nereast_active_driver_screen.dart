@@ -1,10 +1,16 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:smooth_star_rating_nsafe/smooth_star_rating.dart';
+import 'package:users_app/assistants/assistant_methods.dart';
 import 'package:users_app/global/global.dart';
 
 class SelectNearestActiveDriversScreen extends StatefulWidget {
-  const SelectNearestActiveDriversScreen({super.key});
+
+  DatabaseReference? referenceRideRequest;
+
+  SelectNearestActiveDriversScreen({this.referenceRideRequest});
 
   @override
   State<SelectNearestActiveDriversScreen> createState() =>
@@ -13,6 +19,25 @@ class SelectNearestActiveDriversScreen extends StatefulWidget {
 
 class _SelectNearestActiveDriversScreenState
     extends State<SelectNearestActiveDriversScreen> {
+
+  String fareAmount = "";
+
+  getFareAmountAccordingToVehicalType(int index){
+    if(tripDirectionDetailInfo != null){
+      if(dList[index]["car_detail"]["type"].toString() == "bike"){
+        fareAmount = (AssistantMethods.claculateFairAmountFromOriginoDestination(tripDirectionDetailInfo!)/2).toString(); 
+      }
+      if(dList[index]["car_detail"]["type"].toString() == "uber-x"){  // this for three wheel
+        fareAmount = (AssistantMethods.claculateFairAmountFromOriginoDestination(tripDirectionDetailInfo!)/2).toString(); 
+      }
+      if(dList[index]["car_detail"]["type"].toString() == "uber-go"){  //this for three car
+        fareAmount = (AssistantMethods.claculateFairAmountFromOriginoDestination(tripDirectionDetailInfo!)).toString(); 
+      }
+    }
+
+    return fareAmount;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,6 +54,8 @@ class _SelectNearestActiveDriversScreenState
           ),
           onPressed: () {
             //delete he ride requestfrom data base
+            Fluttertoast.showToast(msg: "you have canclled the ride request");
+            widget.referenceRideRequest!.remove();
             SystemNavigator.pop();
           },
         ),
@@ -37,13 +64,13 @@ class _SelectNearestActiveDriversScreenState
         itemCount: dList.length,
         itemBuilder: (context, index) {
           return Card(
-            color: Colors.grey,
+            color: Colors.white,
             elevation: 3,
             shadowColor: Colors.green,
             margin: EdgeInsets.all(8),
             child: ListTile(
               leading: Padding(
-                padding: const EdgeInsets.only(top: 8.0),
+                padding: const EdgeInsets.only(top: 2.0),
                 child: Image.asset(
                   "images/" + dList[index]["car_detail"]["type"].toString() + ".png",
                   width: 70,
@@ -77,18 +104,27 @@ class _SelectNearestActiveDriversScreenState
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "3",
-                    style: TextStyle(
+                    "Rs. " + getFareAmountAccordingToVehicalType(index),
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 1,),
+                  Text(
+                    tripDirectionDetailInfo !=  null ? tripDirectionDetailInfo!.duration_text! : "",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black54,
+                      fontSize: 12
                     ),
                   ),
                   const SizedBox(height: 2,),
                   Text(
-                    "13 km",
-                    style: TextStyle(
+                    tripDirectionDetailInfo !=  null ? tripDirectionDetailInfo!.distance_text! : "",
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.black54,
-                      fontSize: 12
+                      fontSize: 10
                     ),
                   ),
                 ],

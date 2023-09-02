@@ -84,5 +84,16 @@ class AssistantMethods{
 
   }
 
+  static double claculateFairAmountFromOriginoDestination(DirectionDetailInfo directionDetailInfo){
+
+    double timeTraveledFareAmountPerMinutes = (directionDetailInfo.duration_value! / 60) * 0.1;
+    double distanceTraveledFareAmountPerLilometer = (directionDetailInfo.duration_value! / 1000) * 0.1;
+    double totalFaireAmount = timeTraveledFareAmountPerMinutes + distanceTraveledFareAmountPerLilometer;
+
+    // 1 used = 120;
+    double localCurrencyAmountTotalFare = totalFaireAmount * 120;
+    return double.parse(localCurrencyAmountTotalFare.toStringAsFixed(2));
+  }
+
 
 }

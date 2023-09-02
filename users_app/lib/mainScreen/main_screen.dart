@@ -18,6 +18,7 @@ import 'package:users_app/infoHandler/app_info.dart';
 import 'package:users_app/main.dart';
 import 'package:users_app/mainScreen/search_places_screen.dart';
 import 'package:users_app/mainScreen/select_nereast_active_driver_screen.dart';
+import 'package:users_app/models/direction_detail_info.dart';
 import 'package:users_app/widgets/my_drawer.dart';
 
 import '../appConstants/app_colors.dart';
@@ -57,6 +58,10 @@ class _MainScreenState extends State<MainScreen> {
   BitmapDescriptor? activeNearbyIcon;
 
   List<ActiveNearbyAvailableDrivers> onlineNearByAvailableDriversList = [];
+
+  DatabaseReference? referenceRideRequest;
+
+  
 
   blackThemeGoogleMap() {
     newGoogleMapController!.setMapStyle('''
@@ -280,6 +285,36 @@ class _MainScreenState extends State<MainScreen> {
   saveRideRequestInformation() {
     //1. save the rideRequest information
 
+    referenceRideRequest = FirebaseDatabase.instance.ref().child("All Ride Request").push(); //.push genaate unique tandom id
+
+    var originLocation = Provider.of<AppInfo>(context,listen: false).userPickUpLocation;
+    var destinationLocation = Provider.of<AppInfo>(context,listen: false).userDropOffLocation;
+
+    Map originLocationMap = {
+      "latitude" : originLocation!.locationLatiude.toString(),
+      "longitude" : originLocation!.locationLongitude.toString(),
+    };
+
+    Map destinationLocationMap = {
+      "latitude" : destinationLocation!.locationLatiude.toString(),
+      "longitude" : destinationLocation!.locationLongitude.toString(),
+    };
+
+    Map userInformationMap = {
+      "origin" : originLocationMap,
+      "destination" : destinationLocationMap,
+      "time" : DateTime.now().toString(),
+      "userName" : userModelCurrentInfo!.name,
+      "userPhone" : userModelCurrentInfo!.phone,
+      "originAddress" : originLocation!.locationname,
+      "destinationAddress" : destinationLocation!.locationname,
+      "driverId" : "waiting",
+
+    };
+
+    referenceRideRequest!.set(userInformationMap);
+
+
     onlineNearByAvailableDriversList =
         GeoFireAssistant.activeNearbyAvailableDriversList;
     searchNearestOnlineDriver();
@@ -291,6 +326,9 @@ class _MainScreenState extends State<MainScreen> {
 
     if (onlineNearByAvailableDriversList.length == 0) {
       // cancel the ride request
+
+      referenceRideRequest!.remove();
+
       setState(() {
         polyLineSet.clear();
         markersSet.clear();
@@ -303,7 +341,8 @@ class _MainScreenState extends State<MainScreen> {
               "No Online Nearest Driver Available. Search Again after some time, Restarting App Now.");
 
       Future.delayed(const Duration(milliseconds: 4000), () {
-        MyApp.restartApp(context);
+        //MyApp.restartApp(context);
+        SystemNavigator.pop();
       });
       return;
     }
@@ -312,7 +351,7 @@ class _MainScreenState extends State<MainScreen> {
 
     await retriveOnLineDriversInformation(onlineNearByAvailableDriversList);
 
-    Navigator.push(context, MaterialPageRoute(builder: (c)=> SelectNearestActiveDriversScreen()));
+    Navigator.push(context, MaterialPageRoute(builder: (c)=> SelectNearestActiveDriversScreen(referenceRideRequest : referenceRideRequest)));
   }
 
   retriveOnLineDriversInformation(List onLineNearestDriverList) async{
@@ -587,6 +626,10 @@ class _MainScreenState extends State<MainScreen> {
     var directionDetailsInfo =
         await AssistantMethods.obtainOriginToDestinationDirectionDetail(
             originLatlang, destinationLatlang);
+
+    setState(() {
+      tripDirectionDetailInfo = directionDetailsInfo;
+    });
 
     Navigator.pop(context);
 
