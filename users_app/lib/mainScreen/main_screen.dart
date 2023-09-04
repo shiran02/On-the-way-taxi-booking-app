@@ -297,7 +297,7 @@ class _MainScreenState extends State<MainScreen> {
 
     Map destinationLocationMap = {
       "latitude" : destinationLocation!.locationLatiude.toString(),
-      "longitude" : destinationLocation!.locationLongitude.toString(),
+      "longitude" : destinationLocation.locationLongitude.toString(),
     };
 
     Map userInformationMap = {
@@ -306,7 +306,7 @@ class _MainScreenState extends State<MainScreen> {
       "time" : DateTime.now().toString(),
       "userName" : userModelCurrentInfo!.name,
       "userPhone" : userModelCurrentInfo!.phone,
-      "originAddress" : originLocation!.locationname,
+      "originAddress" : originLocation.locationname,
       "destinationAddress" : destinationLocation!.locationname,
       "driverId" : "waiting",
 
@@ -435,7 +435,7 @@ class _MainScreenState extends State<MainScreen> {
                 backgroundColor: Color.fromARGB(191, 115, 104, 84),
                 child: Icon(
                   openNavigationDrawer ? Icons.menu : Icons.close,
-                  color: Colors.white,
+                  color: Colors.orange,
                 ),
               ),
             ),
@@ -466,7 +466,7 @@ class _MainScreenState extends State<MainScreen> {
                         children: [
                           const Icon(
                             Icons.add_location_alt_outlined,
-                            color: AppColors.fontColor,
+                            color: AppColors.yellowColor,
                           ),
                           const SizedBox(
                             width: 12.0,
@@ -478,7 +478,7 @@ class _MainScreenState extends State<MainScreen> {
                                 "From",
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.whiteColor, fontSize: 12),
+                                  color: AppColors.yellowColor, fontSize: 12),
                               ),
                               Text(
                                 Provider.of<AppInfo>(context)
@@ -501,7 +501,7 @@ class _MainScreenState extends State<MainScreen> {
 
                       const Divider(
                         height: 2,
-                        color: AppColors.whiteColor,
+                        color: Colors.orange,
                       ),
 
                       SizedBox(height: 10),
@@ -527,7 +527,7 @@ class _MainScreenState extends State<MainScreen> {
                           children: [
                             const Icon(
                               Icons.add_location_alt_outlined,
-                              color: AppColors.fontColor,
+                              color: AppColors.greenColor,
                             ),
                             const SizedBox(
                               width: 12.0,
@@ -539,7 +539,7 @@ class _MainScreenState extends State<MainScreen> {
                                   "To",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                      color: AppColors.whiteColor,
+                                      color: AppColors.greenColor,
                                       fontSize: 12),
                                 ),
                                 Text(
@@ -564,7 +564,7 @@ class _MainScreenState extends State<MainScreen> {
 
                       const Divider(
                         height: 2,
-                        color: AppColors.whiteColor,
+                        color: Colors.orange,
                       ),
                       const SizedBox(height: 10),
 
@@ -582,7 +582,9 @@ class _MainScreenState extends State<MainScreen> {
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                              primary: AppColors.greyColor,),
+                              primary: Colors.orange.shade800,
+                          ),
+                          
                           child: const Text(
                             "Request a ride",
                             style: TextStyle(

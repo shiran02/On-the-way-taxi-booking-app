@@ -21,14 +21,14 @@ class _MyDrawerState extends State<MyDrawer> {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: AppColors.drawergreen,
+      backgroundColor: Colors.orange.shade800,
       child: ListView(
     
         children: [
           //drawer header
           Container(
             height: 215,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               image: DecorationImage(
                 fit: BoxFit.cover,
                 image: AssetImage("images/drawer_back.png"),
@@ -36,43 +36,49 @@ class _MyDrawerState extends State<MyDrawer> {
             ),
             // color: Colors.black,
             child: DrawerHeader(
+
               child: Container(
-                
                 child: Row(children: [
+
                   const Icon(
                     Icons.person,
                     size: 70,
                     color: Colors.white,
                   ),
-                  SizedBox(
+                  
+                  const SizedBox(
                     width: 16,
                   ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        //"shiran",
-                        widget.name.toString(),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                  
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          //"shiran",
+                          widget.name.toString(),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(
-                        height: 4,
-                      ),
-                      Text(
-                        widget.email.toString(),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          fontWeight: FontWeight.normal,
+                        const SizedBox(
+                          height: 4,
                         ),
-                      ),
-                    ],
+                        Text(
+                          widget.email.toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
                   )
+                
                 ]),
               ),
             ),
@@ -132,7 +138,7 @@ class _MyDrawerState extends State<MyDrawer> {
               Navigator.push(
                   context, MaterialPageRoute(builder: (c) => MySplashScreen()));
             },
-            child: ListTile(
+            child: const ListTile(
               leading: Icon(
                 Icons.logout,
                 color: Colors.white,
