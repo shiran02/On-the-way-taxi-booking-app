@@ -68,7 +68,12 @@ class _SelectNearestActiveDriversScreenState
 
           return GestureDetector(
             onTap: (){
-              
+             setState(() {
+               choosendriverId =  dList[index]["id"].toString(); 
+             });
+
+            Navigator.pop(context,"driverChoosed");
+
             },
             child: Card(
               color: AppColors.yellowColor,

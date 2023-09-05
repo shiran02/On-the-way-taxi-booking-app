@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_geofire/flutter_geofire.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -351,7 +352,36 @@ class _MainScreenState extends State<MainScreen> {
 
     await retriveOnLineDriversInformation(onlineNearByAvailableDriversList);
 
-    Navigator.push(context, MaterialPageRoute(builder: (c)=> SelectNearestActiveDriversScreen(referenceRideRequest : referenceRideRequest)));
+    var response =   await Navigator.push(context, MaterialPageRoute(builder: (c)=> SelectNearestActiveDriversScreen(referenceRideRequest : referenceRideRequest)));
+
+    if(response == "driverChoosed"){
+      FirebaseDatabase.instance.ref()
+      .child("drivers")
+      .child(choosendriverId!)
+      .once()
+      .then((snap) 
+      {
+        if(snap.snapshot.value != null){
+            // notification send spesific driver
+            sendNotificationToDriver(choosendriverId!);
+        }else{
+          Fluttertoast.showToast(msg: "This drivrt Mot exist");
+        }
+      });
+    }
+  
+  }
+
+  sendNotificationToDriver(String choosenDriverId){
+
+    FirebaseDatabase.instance.ref()
+      .child("drivers")
+      .child(choosendriverId!)
+      .child("newRideStatus")
+      .set(referenceRideRequest!.key);
+
+    // automate the oush notification
+
   }
 
   retriveOnLineDriversInformation(List onLineNearestDriverList) async{
