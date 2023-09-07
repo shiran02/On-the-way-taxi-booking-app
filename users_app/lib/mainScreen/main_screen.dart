@@ -769,7 +769,7 @@ class _MainScreenState extends State<MainScreen> {
     Geofire.initialize("activeDrivers");
 
     Geofire.queryAtLocation(
-            userCurentPosition!.latitude, userCurentPosition!.longitude, 5)!
+            userCurentPosition!.latitude, userCurentPosition!.longitude, 105)!
         .listen((map) {
       print(map);
       if (map != null) {
