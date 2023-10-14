@@ -1,5 +1,7 @@
 class PredictedPlaces{
 
+  //this are get by according to the documentation 
+
   String? place_id;
   String? main_text;
   String? secondary_text;

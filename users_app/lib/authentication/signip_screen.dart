@@ -42,7 +42,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  saveUserInfoNow() async {
+  saveUserInfoNow() async {  
     showDialog(
         context: context,
         barrierDismissible: false,

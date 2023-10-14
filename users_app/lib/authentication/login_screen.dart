@@ -63,17 +63,18 @@ class _LoginScreenState extends State<LoginScreen> {
             .catchError((msg) {
       Navigator.pop(context);
       Fluttertoast.showToast(msg: "Error :" + msg.toString());
-    }))
-        .user;
+    })).user;
+
+    
 
     if (firebaseUser != null) {
-
        DatabaseReference driverRef =
           FirebaseDatabase.instance.ref().child("users");
       driverRef.child(firebaseUser.uid).once().then((deriverKey) 
       {
         final snap = deriverKey.snapshot;
-
+      
+      //check user is exist in database if its not cant log
 
         if (snap.value != null) {
           currentFirebaseUer = firebaseUser;

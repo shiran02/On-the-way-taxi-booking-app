@@ -17,19 +17,25 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
 
   void findPlacesAutoCompleteSearch(String inputText) async {
     if (inputText.length > 1) {
+
       //String encodedInputText = Uri.encodeQueryComponent(inputText);
       String urlAutoCompleteSearch =
           "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$inputText&key=$mapKey&components=country:LK";
 
-      var responseAutoCompleteSearch =
-          await RequestAssistant.receiveRequest(urlAutoCompleteSearch);
+      var responseAutoCompleteSearch = await RequestAssistant.receiveRequest(urlAutoCompleteSearch);
 
       if (responseAutoCompleteSearch == "Error occured ,Faild. No Response") {
         return;
       }
 
+      //according to the documentation if satus = okey data is valid 
+
       if (responseAutoCompleteSearch["status"] == "OK") {
         var placePrediction = responseAutoCompleteSearch["predictions"];
+
+        //convert json data to list ................
+        //reason is cant diaplay json data to list view to hrlp of the modelr class
+
 
         var placePredictionList = (placePrediction as List)
             .map((jsonData) => PredictedPlaces.fromJson(jsonData))

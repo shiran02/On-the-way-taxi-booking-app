@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:users_app/assistants/request_assistant.dart';
+import 'package:users_app/global/global.dart';
 import 'package:users_app/global/map_key.dart';
 import 'package:users_app/models/directions.dart';
 import 'package:users_app/models/predicted_places.dart';
@@ -10,11 +11,17 @@ import 'package:users_app/widgets/progress_dialog.dart';
 import '../appConstants/app_colors.dart';
 import '../infoHandler/app_info.dart';
 
-class PlacePredictionTileDesign extends StatelessWidget {
+class PlacePredictionTileDesign extends StatefulWidget {
   final PredictedPlaces? predictedPlaces;
 
   PlacePredictionTileDesign({this.predictedPlaces});
 
+  @override
+  State<PlacePredictionTileDesign> createState() => _PlacePredictionTileDesignState();
+}
+
+class _PlacePredictionTileDesignState extends State<PlacePredictionTileDesign> {
+  //..................................................................
   getPlaceDirectionDetail(String? placeId  , context)async{
 
         showDialog(
@@ -23,6 +30,8 @@ class PlacePredictionTileDesign extends StatelessWidget {
           message: ",Please wait.",
         ),
     );
+
+    //we get the plase using place id and make url using it .............
 
     String placeDirectionDetail = "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$mapKey";
   
@@ -34,6 +43,7 @@ class PlacePredictionTileDesign extends StatelessWidget {
           return;
     }
 
+  //acording to doucumentation is it okey 
 
     if(responseApi["status"] == "OK")
     {
@@ -65,15 +75,15 @@ class PlacePredictionTileDesign extends StatelessWidget {
 
         Provider.of<AppInfo>(context, listen: false).updateDropOffLocationAddress(directions);
 
+        setState(() {
+          userDropAddress = directions.locationname!;
+        });
+
         Navigator.pop(context, "obtainedDropoff");
 
 
     }
 
-
-
-  
-  
   }
 
   @override
@@ -83,7 +93,7 @@ class PlacePredictionTileDesign extends StatelessWidget {
       child: ElevatedButton(
           style: ElevatedButton.styleFrom(primary: AppColors.blackColor),
           onPressed: () {
-            getPlaceDirectionDetail(predictedPlaces!.place_id , context);
+            getPlaceDirectionDetail(widget.predictedPlaces!.place_id , context);
           },
           child: Row(
             children: [
@@ -99,7 +109,7 @@ class PlacePredictionTileDesign extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    predictedPlaces!.main_text!,
+                    widget.predictedPlaces!.main_text!,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 16.0,
@@ -110,7 +120,7 @@ class PlacePredictionTileDesign extends StatelessWidget {
                     height: 2,
                   ),
                   Text(
-                    predictedPlaces!.secondary_text!,
+                    widget.predictedPlaces!.secondary_text!,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 12.0,

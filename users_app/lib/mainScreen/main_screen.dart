@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_geofire/flutter_geofire.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
@@ -54,6 +55,7 @@ class _MainScreenState extends State<MainScreen> {
 
   String userName = "Your Name";
   String userEmail = "Your Email";
+  String deviceRegistationToken = "";
 
   bool activeNearByDriverKeyLoads = false;
   BitmapDescriptor? activeNearbyIcon;
@@ -62,7 +64,7 @@ class _MainScreenState extends State<MainScreen> {
 
   DatabaseReference? referenceRideRequest;
 
-  
+// goog;e map black theme .......................................
 
   blackThemeGoogleMap() {
     newGoogleMapController!.setMapStyle('''
@@ -231,9 +233,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   LocationPermission? _locationPermission;
-
   double bottomPaddingOfMap = 0;
   double topPaddingOfMap = 0;
+
+  //location permissiom .........................................
 
   checkIfLocationPermissionload() async {
     _locationPermission = await Geolocator.requestPermission();
@@ -241,6 +244,8 @@ class _MainScreenState extends State<MainScreen> {
       _locationPermission = await Geolocator.requestPermission();
     }
   }
+
+//camera position .................................................
 
   static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(8.576425, 81.2344952),
@@ -250,36 +255,44 @@ class _MainScreenState extends State<MainScreen> {
   GlobalKey<ScaffoldState> sKey = GlobalKey<ScaffoldState>();
 
   double searchLocationContaimerHeight = 240;
+  double waitingResponseFromDriverContainerHeight = 0;
 
-  // get user current location
+  // get user current location .....................................................
+  
   localUserPosition() async {
-    Position currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
+    Position currentPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
     userCurentPosition = currentPosition;
 
-    LatLng latingPosition =
-        LatLng(userCurentPosition!.latitude, userCurentPosition!.longitude);
+    //get lat lang ..................................................................
+    LatLng latingPosition = LatLng(userCurentPosition!.latitude, userCurentPosition!.longitude);
 
-    CameraPosition cameraPosition =
-        CameraPosition(target: latingPosition, zoom: 10);
+    //animate camera according to user move .........................................
+    CameraPosition cameraPosition = CameraPosition(target: latingPosition, zoom: 10);
 
-    newGoogleMapController!
-        .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+    //update google map animate camera..............................................................
 
+    newGoogleMapController!.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+
+    //called for searchAddressForGeograpiCodinates to get humana readable location
     String humanReadableAddress =
         await AssistantMethods.searchAddressForGeograpiCodinates(
             userCurentPosition!, context);
-    print("this is your address" + humanReadableAddress);
 
+
+    print("this is your address" + humanReadableAddress);
+ 
     userName = userModelCurrentInfo!.name!;
     userEmail = userModelCurrentInfo!.email!;
 
     initializeGeoFireListener();
   }
 
+  // .............................................................................
+
   @override
   void initState() {
     super.initState();
+    //caleed for get locatiom permissiom...........................
     checkIfLocationPermissionload();
   }
 
@@ -364,6 +377,44 @@ class _MainScreenState extends State<MainScreen> {
         if(snap.snapshot.value != null){
             // notification send spesific driver
             sendNotificationToDriver(choosendriverId!);
+
+            //Display waiting response from Driver UI
+            showWaitingResponseFromDriverUi(); 
+
+            //Response for a Driver
+
+            FirebaseDatabase.instance.ref()
+            .child("drivers")
+            .child(choosendriverId!)
+            .child("newRideStatus")
+            .onValue.listen((eventSnapshot) {
+              
+            //1. driver has cance the ride request :: oush notification
+            //(newRieRequest = idle)
+
+            if(eventSnapshot.snapshot.value == "idle"){
+
+              Fluttertoast.showToast(msg: "The Driver has Cancelled Request..please select Another driver");
+
+              Future.delayed(Duration(milliseconds: 3000),(){
+                Fluttertoast.showToast(msg: "Please REstart The App");
+                SystemNavigator.pop();
+              });
+            }
+
+
+            //2.driver has accept the rideRequest : push notification
+            //(newRideStatus = accept)
+
+            if(eventSnapshot.snapshot.value == "accepted"){
+              //design and display UI for desplay assigned driver information
+            }
+
+            });
+
+            
+
+
         }else{
           Fluttertoast.showToast(msg: "This drivrt Mot exist");
         }
@@ -372,17 +423,49 @@ class _MainScreenState extends State<MainScreen> {
   
   }
 
-  sendNotificationToDriver(String choosenDriverId){
+  showWaitingResponseFromDriverUi(){
 
-    FirebaseDatabase.instance.ref()
-      .child("drivers")
-      .child(choosendriverId!)
-      .child("newRideStatus")
-      .set(referenceRideRequest!.key);
-
-    // automate the oush notification
-
+    setState(() {
+      searchLocationContaimerHeight = 0;
+      waitingResponseFromDriverContainerHeight = 240;
+    });
   }
+
+ sendNotificationToDriver(String choosenDriverId) {
+
+  FirebaseDatabase.instance.ref()
+    .child("drivers")
+    .child(choosendriverId!)
+    .child("newRideStatus")
+    .set(referenceRideRequest!.key);
+
+  // automate the push notification
+
+  FirebaseDatabase.instance.ref()
+    .child("drivers")
+    .child(choosendriverId!)
+    .child("token")
+    .once()
+    .then((snap) {
+      if (snap.snapshot.value != null) {
+        deviceRegistationToken = snap.snapshot.value.toString();
+
+        // send notification
+        AssistantMethods.sendNotificationToDriver(
+          deviceRegistationToken,
+          referenceRideRequest!.key.toString(),
+          context,
+        );
+
+        Fluttertoast.showToast(msg: "Motifaication Send Successfully");
+
+
+      } else {
+        Fluttertoast.showToast(msg: "This driver does not exist");
+      }
+    });
+}
+
 
   retriveOnLineDriversInformation(List onLineNearestDriverList) async{
 
@@ -437,6 +520,9 @@ class _MainScreenState extends State<MainScreen> {
 
               // for black theme google map
               //  newGoogleMapController!.setMapStyle(_mapStyle);
+
+              // map theme ..............................
+            
               blackThemeGoogleMap();
 
               setState(() {
@@ -444,11 +530,13 @@ class _MainScreenState extends State<MainScreen> {
                 topPaddingOfMap = 25;
               });
 
+              // call for get user current position.................................
+
               localUserPosition();
             },
           ),
 
-          //custom hamburger button for drawer
+          //custom hamburger button for drawer .........................
           Positioned(
             top: 46,
             left: 22,
@@ -471,7 +559,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
 
-          //Ui for serching location
+          //Ui for serching location ....................................
 
           Positioned(
             bottom: 0,
@@ -486,12 +574,15 @@ class _MainScreenState extends State<MainScreen> {
                     color: Colors.black87,
                     borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20))),
+                        topRight: Radius.circular(20))
+                ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                   child: Column(
                     children: [
+
                       //from ---------------------------------------------------
+                      
                       Row(
                         children: [
                           const Icon(
@@ -511,13 +602,8 @@ class _MainScreenState extends State<MainScreen> {
                                   color: AppColors.yellowColor, fontSize: 12),
                               ),
                               Text(
-                                Provider.of<AppInfo>(context)
-                                            .userPickUpLocation !=
-                                        null
-                                    ? (Provider.of<AppInfo>(context)
-                                            .userPickUpLocation!
-                                            .locationname!)
-                                        .substring(0, 28)
+                                Provider.of<AppInfo>(context).userPickUpLocation !=null
+                                    ? (Provider.of<AppInfo>(context).userPickUpLocation!.locationname!).substring(0, 28)
                                     : "Not Getting Address",
                                 style: const TextStyle(
                                     color: AppColors.whiteColor, fontSize: 14),
@@ -535,7 +621,9 @@ class _MainScreenState extends State<MainScreen> {
                       ),
 
                       SizedBox(height: 10),
+
                       //to ..............................
+
                       GestureDetector(
                         onTap: () async {
                           var responseFromSearchCsreen = await Navigator.push(
@@ -627,10 +715,52 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
           ),
+        
+          //ui for waiting response fro driver .................
+
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: waitingResponseFromDriverContainerHeight,
+              decoration: const BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(20),
+                  topLeft: Radius.circular(20),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Center(
+                  child: AnimatedTextKit(
+                    animatedTexts: [
+                      FadeAnimatedText(
+                        'Waiting for Response\nfrom Driver',
+                        duration: const Duration(seconds: 6),
+                        textAlign: TextAlign.center,
+                        textStyle: const TextStyle(fontSize: 30.0, color: Colors.amberAccent, fontWeight: FontWeight.bold),
+                      ),
+                      ScaleAnimatedText(
+                        'Please wait...',
+                        duration: const Duration(seconds: 10),
+                        textAlign: TextAlign.center,
+                        textStyle: const TextStyle(fontSize: 32.0, color: Colors.amberAccent, fontFamily: 'Canterbury'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        
         ],
       ),
     );
   }
+
+  //draw poly line........................................
 
   Future<void> drawPolyLineFromOriginToDestination() async {
     var originPosition =
@@ -654,6 +784,7 @@ class _MainScreenState extends State<MainScreen> {
         message: ",Please wait.",
       ),
     );
+    //call this method to get all detail pick up location to frop up lacatin ex: city name etc
 
     var directionDetailsInfo =
         await AssistantMethods.obtainOriginToDestinationDirectionDetail(
@@ -697,6 +828,8 @@ class _MainScreenState extends State<MainScreen> {
       polyLineSet.add(polyline);
     });
 
+    // cameara logic ..................................................
+
     LatLngBounds boundsLatLng;
     if (originLatlang.latitude > destinationLatlang.latitude &&
         originLatlang.longitude > destinationLatlang.longitude) {
@@ -717,8 +850,11 @@ class _MainScreenState extends State<MainScreen> {
           LatLngBounds(southwest: originLatlang, northeast: destinationLatlang);
     }
 
+// ..................................
     newGoogleMapController!
         .animateCamera(CameraUpdate.newLatLngBounds(boundsLatLng, 65));
+
+
 
     Marker originMarker = Marker(
       markerId: const MarkerId("originID"),
@@ -769,7 +905,7 @@ class _MainScreenState extends State<MainScreen> {
     Geofire.initialize("activeDrivers");
 
     Geofire.queryAtLocation(
-            userCurentPosition!.latitude, userCurentPosition!.longitude, 105)!
+            userCurentPosition!.latitude, userCurentPosition!.longitude, 90)!
         .listen((map) {
       print(map);
       if (map != null) {
